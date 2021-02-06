@@ -1,5 +1,5 @@
 use super::collect_versions;
-use crate::{codegen::general, env::Env, file_saver::save_to_file};
+use crate::{codegen::general, env::Env, file_saver::save_to_file, library::MAIN_NAMESPACE};
 use log::info;
 use std::io::{Result, Write};
 
@@ -30,10 +30,15 @@ pub fn generate(env: &Env) {
 
 #[allow(clippy::write_literal)]
 fn generate_build_script(w: &mut dyn Write, env: &Env, split_build_rs: bool) -> Result<()> {
+    let ns = env.library.namespace(MAIN_NAMESPACE);
+    let package_name = ns.package_name.as_ref().expect("Missing package name");
+
     if !split_build_rs {
         general::start_comments(w, &env.config)?;
         writeln!(w)?;
     }
+
+    writeln!(w, "use std::env;")?;
     writeln!(
         w,
         "{}",
@@ -55,9 +60,42 @@ fn main() {} // prevent linking libraries to avoid documentation failure
 
 #[cfg(not(feature = "dox"))]
 fn main() {
-    if let Err(s) = system_deps::Config::new().probe() {
+    let libs = system_deps::Config::new().probe();
+    if let Err(s) = libs {
         println!("cargo:warning={}", s);
         process::exit(1);
+    }
+
+    let libs = libs.unwrap();
+
+    if env::var("CARGO_FEATURE_ABI_TESTS").is_ok() {
+"##
+    )?;
+
+    write!(
+        w,
+        "        let includes = libs.get(\"{}\").unwrap().include_paths.clone();",
+        package_name
+    )?;
+
+    write!(
+        w,
+        "{}",
+        r##"
+
+        let mut cc = cc::Build::new();
+
+        cc.flag_if_supported("-Wno-deprecated-declarations");
+        cc.flag_if_supported("-std=c11"); // for _Generic
+
+        cc.file("tests/constant.c");
+        cc.file("tests/layout.c");
+
+        for i in includes {
+            cc.include(i);
+        }
+
+        cc.compile("cabitests");
     }
 }
 "##

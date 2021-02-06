@@ -83,6 +83,7 @@ fn fill_in(root: &mut Table, env: &Env) {
 
     {
         let build_deps = upsert_table(root, "build-dependencies");
+        set_string(build_deps, "cc", "1.0.0");
         set_string(build_deps, "system-deps", "2.0");
     }
 
@@ -115,6 +116,7 @@ fn fill_in(root: &mut Table, env: &Env) {
                     .collect(),
             ),
         );
+        features.insert("abi-tests".to_string(), Value::Array(Vec::new()));
     }
 
     {
