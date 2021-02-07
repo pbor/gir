@@ -432,14 +432,11 @@ impl Results {
     fn record_failed(&mut self) {
         self.failed += 1;
     }
-    fn summary(&self) -> String {
-        format!("{} passed; {} failed", self.passed, self.failed)
-    }
     fn expect_total_success(&self) {
         if self.failed == 0 {
-            println!("OK: {}", self.summary());
+            println!("OK: {}", format!("{} passed; {} failed", self.passed, self.failed));
         } else {
-            panic!("FAILED: {}", self.summary());
+            panic!("FAILED: {}", format!("{} passed; {} failed", self.passed, self.failed));
         };
     }
 }
@@ -448,8 +445,8 @@ impl Results {
 fn cross_validate_constants_with_c() {
     let mut results = Results::default();
 
-    for (i, ((rust_name, rust_value), (c_name, c_value))) in
-        RUST_CONSTANTS.iter().zip(c_constants().iter()).enumerate()
+    for ((rust_name, rust_value), (c_name, c_value)) in
+        RUST_CONSTANTS.iter().zip(c_constants().iter())
     {
         if rust_name != c_name {
             results.record_failed();
@@ -467,10 +464,6 @@ fn cross_validate_constants_with_c() {
         }
 
         results.record_passed();
-
-        if (i + 1) % 25 == 0 {
-            println!("constants ... {}", results.summary());
-        }
     }
 
     results.expect_total_success();
@@ -480,8 +473,8 @@ fn cross_validate_constants_with_c() {
 fn cross_validate_layout_with_c() {
     let mut results = Results::default();
 
-    for (i, ((rust_name, rust_layout), (c_name, c_layout))) in
-        RUST_LAYOUTS.iter().zip(c_layouts().iter()).enumerate()
+    for ((rust_name, rust_layout), (c_name, c_layout)) in
+        RUST_LAYOUTS.iter().zip(c_layouts().iter())
     {
         if rust_name != c_name {
             results.record_failed();
@@ -499,10 +492,6 @@ fn cross_validate_layout_with_c() {
         }
 
         results.record_passed();
-
-        if (i + 1) % 25 == 0 {
-            println!("layout    ... {}", results.summary());
-        }
     }
 
     results.expect_total_success();
